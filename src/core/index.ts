@@ -1,0 +1,5 @@
+export { SyncEngine, SyncError } from './sync.js'
+export { loadDBMeta, tableByName } from './schema.js'
+export { validate } from './validate.js'
+export type { SQLiteAdapter } from '../adapters/interface.js'
+export type { TableMeta, DBMeta, ValidationError, SyncRow, SyncState, SyncRequest, SyncResponse } from './types.js'
