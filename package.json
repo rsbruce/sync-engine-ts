@@ -18,17 +18,20 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "serve": "tsx src/node/serve.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.13.0",
     "hono": "^4.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
     "typescript": "~5.6.0"
   },
   "peerDependencies": {
-    "@sqlite.org/sqlite-wasm": ">=3.47.0"
+    "@sqlite.org/sqlite-wasm": ">=3.46.0-build1"
   },
   "peerDependenciesMeta": {
     "@sqlite.org/sqlite-wasm": {

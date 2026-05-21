@@ -107,10 +107,13 @@ export class SyncEngine {
     for (const table of meta.tables) {
       const sinceTs = since[table.name] ?? 0
       const cols = table.columns.map(c => `"${c}"`).join(', ')
-      const tableRows = await this.db.query<Record<string, unknown>>(
-        `SELECT ${cols} FROM "${table.name}" WHERE updated_at > ? OR created_at > ? ORDER BY updated_at ASC`,
-        [sinceTs, sinceTs]
-      )
+      // When sinceTs=0 (first sync), send every row regardless of timestamps —
+      // guards against rows that have null or zero timestamps (e.g. from
+      // positional INSERTs where column order didn't match the schema).
+      const [sql, params] = sinceTs === 0
+        ? [`SELECT ${cols} FROM "${table.name}" ORDER BY COALESCE(updated_at, 0) ASC`, []]
+        : [`SELECT ${cols} FROM "${table.name}" WHERE updated_at > ? OR created_at > ? ORDER BY updated_at ASC`, [sinceTs, sinceTs]]
+      const tableRows = await this.db.query<Record<string, unknown>>(sql, params)
       for (const row of tableRows) {
         rows.push({ table: table.name, ...row })
       }
@@ -134,7 +137,12 @@ export class SyncEngine {
       const query = buildUpsertQuery(tableMeta)
       for (const row of tableRows) {
         const values = tableMeta.columns.map(col => row[col] ?? null)
-        await this.db.exec(query, values)
+        try {
+          await this.db.exec(query, values)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          throw new Error(`${msg} — table: "${tableMeta.name}", row: ${JSON.stringify(row)}`)
+        }
       }
     }
   }

@@ -26,14 +26,17 @@ export class BrowserSQLiteAdapter implements SQLiteAdapter {
   }
 
   async query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-    const { result } = await this.promiser('exec', {
+    const rows: T[] = []
+    await this.promiser('exec', {
       dbId: this.dbId,
       sql,
-      bind: params,
+      bind: params.length > 0 ? params : undefined,
       rowMode: 'object',
-      returnValue: 'resultRows',
+      callback: (result: { row?: T }) => {
+        if (result.row) rows.push(result.row)
+      },
     })
-    return (result.resultRows ?? []) as T[]
+    return rows
   }
 
   async exec(sql: string, params: unknown[] = []): Promise<void> {

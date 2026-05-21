@@ -11,14 +11,19 @@ import { NodeSQLiteAdapter } from './adapter.js'
 interface ServerOptions {
   userDataDir: string
   schemasDir: string
-  allowedOrigins?: string[]
+  allowedOrigins?: string | string[]
 }
 
 export function createSyncServer(options: ServerOptions): Hono {
-  const { userDataDir, schemasDir, allowedOrigins = ['*'] } = options
+  const { userDataDir, schemasDir, allowedOrigins = '*' } = options
   const app = new Hono()
 
   app.use('*', cors({ origin: allowedOrigins, allowHeaders: ['*'] }))
+
+  app.use('*', async (c, next) => {
+    await next()
+    console.log(`${c.req.method} ${c.req.path} ${c.res.status}`)
+  })
 
   // Create a user's database, applying and validating the schema
   app.post('/databases', async (c) => {
