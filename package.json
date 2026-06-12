@@ -1,6 +1,6 @@
 {
-  "name": "sqlite-sync-engine",
-  "version": "0.1.0",
+  "name": "single-player-sync",
+  "version": "0.2.0",
   "type": "module",
   "files": ["dist"],
   "exports": {
@@ -11,26 +11,12 @@
     "./browser": {
       "types": "./dist/browser/index.d.ts",
       "default": "./dist/browser/index.js"
-    },
-    "./node": {
-      "types": "./dist/node/index.d.ts",
-      "default": "./dist/node/index.js"
     }
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "serve": "tsx src/node/serve.ts",
     "prepack": "npm run build"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.13.0",
-    "hono": "^4.6.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "~5.6.0"
   },
   "peerDependencies": {
     "@sqlite.org/sqlite-wasm": ">=3.46.0-build1"
@@ -39,6 +25,9 @@
     "@sqlite.org/sqlite-wasm": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "typescript": "~5.6.0"
   },
   "engines": {
     "node": ">=22.0.0"
