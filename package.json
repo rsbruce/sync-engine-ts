@@ -2,6 +2,7 @@
   "name": "sqlite-sync-engine",
   "version": "0.1.0",
   "type": "module",
+  "files": ["dist"],
   "exports": {
     ".": {
       "types": "./dist/core/index.d.ts",
@@ -19,7 +20,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "serve": "tsx src/node/serve.ts"
+    "serve": "tsx src/node/serve.ts",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
