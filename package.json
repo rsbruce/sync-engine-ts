@@ -1,8 +1,10 @@
 {
   "name": "single-player-sync",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/core/index.d.ts",

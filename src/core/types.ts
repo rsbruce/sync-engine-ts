@@ -34,3 +34,9 @@ export interface SyncResponse {
   rows: SyncRow[]
   state: SyncState
 }
+
+// Returned by SyncEngine.sync() so callers can react to what changed
+export interface SyncResult {
+  pushed: number
+  pulled: number
+}

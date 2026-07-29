@@ -1,6 +1,6 @@
 import type { SQLiteAdapter } from '../adapters/interface.js'
 import { loadDBMeta, tableByName } from './schema.js'
-import type { DBMeta, SyncRequest, SyncResponse, SyncRow, SyncState, TableMeta } from './types.js'
+import type { DBMeta, SyncRequest, SyncResponse, SyncResult, SyncRow, SyncState, TableMeta } from './types.js'
 
 const SYNC_STATE_TABLE = '_sync_state'
 
@@ -24,7 +24,7 @@ export class SyncEngine {
     this.meta = await loadDBMeta(this.db)
   }
 
-  async sync(serverUrl: string, userId: string): Promise<void> {
+  async sync(serverUrl: string, userId: string): Promise<SyncResult> {
     const meta = this.requireMeta()
     const state = await this.readSyncState(meta)
     const rows = await this.collectRowsToPush(meta, state)
@@ -52,6 +52,8 @@ export class SyncEngine {
       await this.applyRows(meta, incomingRows)
       await this.updateSyncState(meta, serverState)
     })
+
+    return { pushed: rows.length, pulled: incomingRows.length }
   }
 
   // Called by the server-side handler to apply a client's push and return a delta.
@@ -66,14 +68,33 @@ export class SyncEngine {
     }
 
     let serverRows: SyncRow[] = []
+    let serverState: SyncState = {}
 
     await this.db.transaction(async () => {
       await this.applyRows(meta, request.rows)
       serverRows = await this.collectRowsToPush(meta, request.state)
+      serverState = await this.computeWatermarks(meta)
     })
 
-    const serverState = await this.readSyncState(meta)
     return { rows: serverRows, state: serverState }
+  }
+
+  // The state returned to the client is the max updated_at per table AFTER the
+  // client's rows have been applied — i.e. a watermark covering both the rows
+  // we just returned and the rows the client just pushed. The client stores it
+  // and sends it back next sync, so both sides then only exchange rows newer
+  // than the watermark. (The server's own _sync_state table is never written;
+  // deriving state from it would pin every watermark at 0 and make each sync
+  // transfer the full database.)
+  private async computeWatermarks(meta: DBMeta): Promise<SyncState> {
+    const state: SyncState = {}
+    for (const table of meta.tables) {
+      const rows = await this.db.query<{ ts: number | null }>(
+        `SELECT MAX(updated_at) AS ts FROM "${table.name}"`
+      )
+      state[table.name] = rows[0]?.ts ?? 0
+    }
+    return state
   }
 
   private async readSyncState(meta: DBMeta): Promise<SyncState> {
