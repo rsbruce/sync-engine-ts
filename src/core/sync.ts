@@ -24,7 +24,7 @@ export class SyncEngine {
     this.meta = await loadDBMeta(this.db)
   }
 
-  async sync(serverUrl: string, userId: string): Promise<SyncResult> {
+  async sync(serverUrl: string, userId: string, accessToken?: string): Promise<SyncResult> {
     const meta = this.requireMeta()
     const state = await this.readSyncState(meta)
     const rows = await this.collectRowsToPush(meta, state)
@@ -36,14 +36,22 @@ export class SyncEngine {
       rows,
     }
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
     const response = await fetch(`${serverUrl}/sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
     })
 
     if (!response.ok) {
-      throw new Error(`Sync failed: ${response.status} ${await response.text()}`)
+      // Carry the HTTP status so callers can react (e.g. refresh on 401).
+      const error = new Error(`Sync failed: ${response.status} ${await response.text()}`) as Error & {
+        status?: number
+      }
+      error.status = response.status
+      throw error
     }
 
     const { rows: incomingRows, state: serverState }: SyncResponse = await response.json()
